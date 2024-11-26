@@ -12,8 +12,8 @@ scene.background = new THREE.Color(0x000000);
 
 // CAMERA
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 1.4,1 ); // First-person camera at height 1.6
-camera.lookAt(0,1.4,-1)
+camera.position.set(0, 1.3,1 ); // First-person camera at height 1.6
+camera.lookAt(0,1.3,-1)
 // RENDERER
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -259,7 +259,7 @@ function generateRoof() {
         {
             map: sandBaseColor, normalMap: sandNormalMap,
             displacementMap: sandHeightMap, displacementScale: 0,
-            aoMap: sandAmbientOcclusion
+            aoMap: sandAmbientOcclusion,
         })
     wrapAndRepeatTexture(material.map!)
     wrapAndRepeatTexture(material.normalMap!)
@@ -291,4 +291,3 @@ const loadingText = document.getElementById('loading-text');
       
       // Start the interval to update the text
       const loadingInterval = setInterval(updateLoadingText, intervalTime);
-
