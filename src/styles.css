@@ -1,32 +1,173 @@
-
-      body {
-        margin: 0px;
-      }
-      #blocker {
-    position: absolute;
-    background-image: url(textures/GIFSMALL.webp);
-    background-repeat: no-repeat;
-    background-position: center;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 1); /* Solid background color */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
+body {
+  margin: 0px;
+  height: 100vh; /* Full viewport height */
+  display: flex; /* Flexbox for centering */
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+}
+#loading-text{
+  position: absolute;
+  bottom: 220px;
+  font-size: 20px;
+}
+#blocker {
+  position: absolute;
+  background-image: url(textures/GIFSMALL.webp);
+  /* background-size: contain; */
+  background-repeat: no-repeat;
+  background-position: center;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 1);
+  /* Solid background color */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
 }
 
 #loader {
-    text-align: center;
-    color: white;
+  text-align: center;
+  color: white;
 }
 
-/* #progress-bar {
-    width: 0;
-    height: 5px;
-    background: #4caf50;
-    margin: 10px 0;
-    transition: width 0.2s ease;
-} */
+#progress-bar {
+  width: 0;
+  height: 5px;
+  background: #4caf50;
+  margin: 10px 0;
+  transition: width 0.2s ease;
+}
+
+/* CSS */
+
+/* Spinner container */
+.spinner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 9999;
+  /* Ensure it's on top */
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  /* Center the spinner */
+  text-align: center;
+}
+
+/* Double bounce animation */
+.double-bounce1,
+.double-bounce2 {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #ffffff;
+  /* Spinner color */
+  opacity: 0.6;
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  animation: bounce 2.0s infinite ease-in-out;
+}
+
+.double-bounce2 {
+  animation-delay: -1.0s;
+}
+
+@keyframes bounce {
+
+  0%,
+  100% {
+    transform: scale(0.0);
+  }
+
+  50% {
+    transform: scale(1.0);
+  }
+}
+
+span {
+  position: relative;
+  display: flex;
+  width: 80px;
+  height: 80px;
+  /* padding: 8px 15px; */
+  border-radius: 10px;
+  background: linear-gradient(180deg, #282828, #202020);
+  box-shadow: inset -8px 0 8px rgba(0, 0, 0, 0.15),
+    inset 0 -8px 8px rgba(0, 0, 0, 0.25), 0 0 0 0px rgba(0, 0, 0, 0.75),
+    10px 20px 25px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+span::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  bottom: 14px;
+  right: 12px;
+  background: linear-gradient(90deg, #232323, #4a4a4a);
+  border-radius: 10px;
+  box-shadow: -10px -10px 10px rgba(255, 255, 255, 0.25),
+    10px 5px 10px rgba(0, 0, 0, 0.15);
+  border-left: 1px solid #0004;
+  border-bottom: 1px solid #0004;
+  border-top: 1px solid #0009;
+}
+
+span i {
+  position: relative;
+  color: white;
+  font-style: normal;
+  left: 10px;
+  top: 10px;
+  text-transform: uppercase;
+}
+
+
+.key2 {
+  z-index: 1;
+}
+.key4 {
+  z-index: 0;
+} 
+
+.keys-container {
+  display: grid;
+  grid-template-rows: repeat(2, 80px); /* Two rows for W and S */
+  grid-template-columns: repeat(3, 80px); /* Three columns */
+  justify-content: center; /* Center keys horizontally */
+  align-items: center; /* Center keys vertically */
+  align-content: center;
+  gap: 2px; /* Space between keys */
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+}
+
+.key, .key2, .key3, .key4 {
+  position: static; /* Remove absolute positioning for responsive layout */
+}
+.key4 {
+  grid-column: 2; /* Center column */
+  grid-row: 1; /* First row for W */
+}
+
+.key2 {
+  grid-column: 2; /* Center column */
+  grid-row: 2; /* Second row for S */
+}
+
+.key {
+  grid-column: 1; /* First column for A */
+  grid-row: 2;
+}
+
+.key3 {
+  grid-column: 3; /* Third column for D */
+  grid-row: 2;
+}
