@@ -188,7 +188,7 @@ function light3() {
     const blocker = document.getElementById('blocker');
 
     loader.load(
-        '/models/MAP5.glb',
+        '/models/FINALKRWWWW.gltf',
         (gltf) => {
             const model = gltf.scene;
             const animations = gltf.animations;
