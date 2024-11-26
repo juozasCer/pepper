@@ -51,7 +51,7 @@ document.addEventListener('click', () => {
 // Create and add the div as a CSS2DObject
 const div = document.createElement('div');
 div.style.color = 'white'; // Optional: style the text
-div.textContent = 'GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump';
+div.textContent = '$ShitSIM';
 const label = new CSS2DObject(div);
 label.position.set(0, 1, 0); // Position at (0, 1, 0)
 scene.add(label);
