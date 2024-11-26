@@ -38,20 +38,43 @@ generateFloor()
 const controls = new PointerLockControls(camera, renderer.domElement);
 scene.add(controls.getObject());
 
-// Pointer lock event listeners
-document.addEventListener('click', () => {
-  if (!controls.isLocked) {
-    setTimeout(() => {
-      controls.lock(); 
-      audio.play();// Lock the pointer after a 1 second delay
-    }, 0);
-  }
-}, false);
+// Create a "Click to Play" overlay
+const clickToPlayOverlay = document.createElement('div');
+clickToPlayOverlay.id = 'click-to-play-overlay';
+clickToPlayOverlay.style.position = 'absolute';
+clickToPlayOverlay.style.top = '0';
+clickToPlayOverlay.style.left = '0';
+clickToPlayOverlay.style.width = '100%';
+clickToPlayOverlay.style.height = '100%';
+clickToPlayOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+clickToPlayOverlay.style.color = 'white';
+clickToPlayOverlay.style.display = 'flex';
+clickToPlayOverlay.style.justifyContent = 'center';
+clickToPlayOverlay.style.alignItems = 'center';
+clickToPlayOverlay.style.zIndex = '0';
+clickToPlayOverlay.style.fontSize = '24px';
+clickToPlayOverlay.style.cursor = 'pointer';
+clickToPlayOverlay.textContent = 'Click to Play';
+document.body.appendChild(clickToPlayOverlay);
+
+// Remove the overlay on click and lock pointer
+clickToPlayOverlay.addEventListener('click', () => {
+    if (!controls.isLocked) {
+        controls.lock();
+        audio.play(); // Play audio when the pointer is locked
+    }
+});
+controls.addEventListener('lock', () => {
+    clickToPlayOverlay.style.display = 'none'; // Show overlay when pointer lock is released
+});
+controls.addEventListener('unlock', () => {
+    clickToPlayOverlay.style.display = 'flex'; // Show overlay when pointer lock is released
+});
 
 // Create and add the div as a CSS2DObject
 const div = document.createElement('div');
 div.style.color = 'white'; // Optional: style the text
-div.textContent = '$ShitSIM';
+div.textContent = '$SHITsim';
 const label = new CSS2DObject(div);
 label.position.set(0, 1, 0); // Position at (0, 1, 0)
 scene.add(label);
@@ -66,7 +89,7 @@ function animate() {
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
   
-    if (controls.isLocked === true) {
+    if (controls.isLocked) {
       // Update movement
       velocity.x -= velocity.x * 10.0 * delta;
       velocity.z -= velocity.z * 10.0 * delta;

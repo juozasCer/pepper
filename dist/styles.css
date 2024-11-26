@@ -130,10 +130,16 @@ span i {
 
 
 .key2 {
-  z-index: 1;
+  z-index: 2;
 }
 .key4 {
-  z-index: 0;
+  z-index: 1;
+} 
+.key3 {
+  z-index: 1;
+} 
+.key {
+  z-index: 1;
 } 
 
 .keys-container {
@@ -171,3 +177,4 @@ span i {
   grid-column: 3; /* Third column for D */
   grid-row: 2;
 }
+
