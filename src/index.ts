@@ -1,9 +1,10 @@
-import * as THREE from 'three'
+import * as THREE from 'three';
 import { CameraHelper } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { velocity, direction, moveForward, moveBackward, moveLeft, moveRight } from './controls';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'; // Import CSS2DRenderer and CSS2DObject
+import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -27,6 +28,28 @@ labelRenderer.domElement.style.position = 'absolute';
 labelRenderer.domElement.style.top = '0px';
 labelRenderer.domElement.style.pointerEvents = 'none'; // Allow pointer events to pass through
 document.body.appendChild(labelRenderer.domElement);
+
+// Spinner and blocker elements
+const spinner = document.getElementById('spinner');
+const blocker = document.getElementById('blocker');
+
+// Loading text
+const loadingText = document.getElementById('loading-text');
+
+let dotCount = 0;
+const maxDots = 3;
+const intervalTime = 500; // milliseconds
+
+// Function to update the loading text
+function updateLoadingText() {
+    dotCount = (dotCount + 1) % (maxDots + 1); // Cycle dotCount from 0 to maxDots
+    if (loadingText) {
+        loadingText.textContent = 'Loading' + '.'.repeat(dotCount);
+    }
+}
+
+// Start the interval to update the text
+const loadingInterval = setInterval(updateLoadingText, intervalTime);
 
 // LIGHTS
 light();
@@ -54,15 +77,20 @@ clickToPlayOverlay.style.cursor = 'pointer';
 clickToPlayOverlay.textContent = 'Click to Play';
 document.body.appendChild(clickToPlayOverlay);
 
+// Variables to store loaded resources
+let audio: HTMLAudioElement;
+
 // Remove the overlay on click and lock pointer
 clickToPlayOverlay.addEventListener('click', () => {
     if (!controls.isLocked) {
         controls.lock();
-        audio.play(); // Play audio when the pointer is locked
+        if (audio) {
+            audio.play(); // Play audio when the pointer is locked
+        }
     }
 });
 controls.addEventListener('lock', () => {
-    clickToPlayOverlay.style.display = 'none'; // Show overlay when pointer lock is released
+    clickToPlayOverlay.style.display = 'none'; // Hide overlay when pointer is locked
 });
 controls.addEventListener('unlock', () => {
     clickToPlayOverlay.style.display = 'flex'; // Show overlay when pointer lock is released
@@ -76,38 +104,167 @@ const label = new CSS2DObject(div);
 label.position.set(0, 1, 0); // Position at (0, 1, 0)
 scene.add(label);
 
-// Load textures once
-const textureLoader = new THREE.TextureLoader();
-// const placeholder = textureLoader.load("./textures/placeholder/placeholder.png");
-const textures = {
-    sandBaseColor: textureLoader.load("./textures/tile/T_uegoehgfw_4K_B.png"),
-    sandNormalMap: textureLoader.load("./textures/tile/T_uegoehgfw_4K_N.png"),
-    sandHeightMap: textureLoader.load("./textures/tile/T_uegoehgfw_4K_H.png"),
-    sandAmbientOcclusion: textureLoader.load("./textures/tile/T_uegoehgfw_4K_ORM.png")
+// Load compressed textures
+const ktx2Loader = new KTX2Loader()
+    .setTranscoderPath('/textures/tile/') // Path to Basis transcoder
+    .detectSupport(renderer);
+
+const textures: { [key: string]: THREE.Texture | null } = {
+    sandBaseColor: null,
+    sandNormalMap: null,
+    sandHeightMap: null,
+    sandAmbientOcclusion: null,
 };
 
-// Optimize textures
-const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
-Object.values(textures).forEach(texture => {
-    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(25, 25);
-    texture.anisotropy = maxAnisotropy;
-    texture.encoding = THREE.sRGBEncoding; // Optional: if your textures are in sRGB
-    texture.minFilter = THREE.LinearMipMapLinearFilter;
+// Load textures asynchronously
+function loadTexture(url: string): Promise<THREE.Texture> {
+    return new Promise((resolve, reject) => {
+        ktx2Loader.load(
+            url,
+            (texture) => {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(25, 25);
+                texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                resolve(texture);
+            },
+            undefined,
+            (error) => {
+                console.error(`Error loading texture ${url}:`, error);
+                reject(error);
+            }
+        );
+    });
+}
+
+// Function to load the model and return a Promise
+function loadModel(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const loader = new GLTFLoader();
+
+        loader.load(
+            '/models/FINALKRWWWW.gltf',
+            (gltf) => {
+                const model = gltf.scene;
+                const animations = gltf.animations;
+                const mixer = new THREE.AnimationMixer(model);
+
+                // Play first animation if available
+                if (animations.length > 0) {
+                    const action = mixer.clipAction(animations[0]);
+                    action.play();
+                }
+
+                model.traverse((object) => {
+                    if (object instanceof THREE.Mesh) {
+                        object.castShadow = true;
+                        object.receiveShadow = true;
+                        object.frustumCulled = false;
+                    }
+                });
+
+                model.position.set(0, 0, 0); // Adjust position as needed
+                model.scale.set(1, 1, 1);
+                scene.add(model);
+
+                // Animation update in the animation loop
+                const clock = new THREE.Clock();
+                function animateModel() {
+                    const delta = clock.getDelta();
+                    mixer.update(delta); // Update animations
+                    requestAnimationFrame(animateModel);
+                }
+                animateModel();
+
+                // Resolve the promise when the model is loaded
+                resolve();
+            },
+            // Progress callback
+            undefined,
+            // Error callback
+            (error) => {
+                console.error('Error loading the model:', error);
+                reject(error);
+            }
+        );
+    });
+}
+
+// Function to load the audio and return a Promise
+function loadAudio(url: string): Promise<HTMLAudioElement> {
+    return new Promise((resolve, reject) => {
+        const audio = new Audio(url);
+        audio.addEventListener('canplaythrough', () => {
+            resolve(audio);
+        }, false);
+
+        audio.addEventListener('error', (e) => {
+            console.error('Error loading audio:', e);
+            reject(e);
+        }, false);
+
+        // Start loading the audio
+        audio.load();
+    });
+}
+
+// Use Promise.all to wait for all resources to load
+Promise.all([
+    Promise.all([
+        loadTexture('./textures/tile/T_uegoehgfw_4K_B.ktx2'),
+        loadTexture('./textures/tile/T_uegoehgfw_4K_N.ktx2'),
+        loadTexture('./textures/tile/T_uegoehgfw_4K_H.ktx2'),
+        loadTexture('./textures/tile/T_uegoehgfw_4K_ORM.ktx2'),
+    ]),
+    loadModel(),
+    loadAudio('/audio/sound.mp3'),
+]).then(([[sandBaseColor, sandNormalMap, sandHeightMap, sandAmbientOcclusion], _, loadedAudio]) => {
+    const floorRoofMaterial = new THREE.MeshStandardMaterial({
+        map: sandBaseColor,
+        normalMap: sandNormalMap,
+        displacementMap: sandHeightMap,
+        displacementScale: 0,
+        aoMap: sandAmbientOcclusion,
+    });
+
+    // Generate floor and roof with the loaded material
+    generateFloor(floorRoofMaterial);
+    generateRoof(floorRoofMaterial);
+
+    // Store the audio for later use
+    audio = loadedAudio;
+
+    // Hide blocker when everything is loaded
+    if (blocker) {
+        blocker.style.display = 'none';
+    }
+    if (spinner) {
+        spinner.style.display = 'none';
+    }
+
+    // Clear the loading interval
+    clearInterval(loadingInterval);
+}).catch((error) => {
+    console.error('Error loading resources:', error);
 });
 
-// Create a shared material for floor and roof
-const floorRoofMaterial = new THREE.MeshStandardMaterial({
-    map: textures.sandBaseColor,
-    normalMap: textures.sandNormalMap,
-    displacementMap: textures.sandHeightMap,
-    displacementScale: 0,
-    aoMap: textures.sandAmbientOcclusion
-});
+// Update function signatures to accept the material
+function generateFloor(floorRoofMaterial: THREE.Material) {
+    const WIDTH = 80;
+    const LENGTH = 80;
+    const position = new THREE.Vector3(0, 0, 0);
+    const rotation = new THREE.Euler(-Math.PI / 2, 0, 0);
+    const floor = createPlane(WIDTH, LENGTH, floorRoofMaterial, position, rotation);
+    scene.add(floor);
+}
 
-// Generate floor and roof
-generateFloor();
-generateRoof();
+function generateRoof(floorRoofMaterial: THREE.Material) {
+    const WIDTH = 80;
+    const LENGTH = 80;
+    const position = new THREE.Vector3(0, 2.5, 0);
+    const rotation = new THREE.Euler(Math.PI / 2, 0, 0);
+    const roof = createPlane(WIDTH, LENGTH, floorRoofMaterial, position, rotation);
+    scene.add(roof);
+}
 
 const clock = new THREE.Clock();
 // ANIMATE
@@ -137,8 +294,8 @@ function animate() {
 
         // Constrain camera position
         const position = controls.getObject().position;
-        position.x = THREE.MathUtils.clamp(position.x, -0.5, 0.45); // Limit x to ±3
-        position.z = THREE.MathUtils.clamp(position.z, 0.2, 1.5); // Limit z to -23 to +5
+        position.x = THREE.MathUtils.clamp(position.x, -0.5, 0.45); // Limit x to ±0.5
+        position.z = THREE.MathUtils.clamp(position.z, 0.2, 1.5); // Limit z to 0.2 to 1.5
     }
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
@@ -164,23 +321,23 @@ function createPlane(width: number, length: number, material: THREE.Material, po
     return plane;
 }
 
-function generateFloor() {
-    const WIDTH = 80;
-    const LENGTH = 80;
-    const position = new THREE.Vector3(0, 0, 0);
-    const rotation = new THREE.Euler(-Math.PI / 2, 0, 0);
-    const floor = createPlane(WIDTH, LENGTH, floorRoofMaterial, position, rotation);
-    scene.add(floor);
-}
+// function generateFloor() {
+//     const WIDTH = 80;
+//     const LENGTH = 80;
+//     const position = new THREE.Vector3(0, 0, 0);
+//     const rotation = new THREE.Euler(-Math.PI / 2, 0, 0);
+//     const floor = createPlane(WIDTH, LENGTH, floorRoofMaterial, position, rotation);
+//     scene.add(floor);
+// }
 
-function generateRoof() {
-    const WIDTH = 80;
-    const LENGTH = 80;
-    const position = new THREE.Vector3(0, 2.5, 0);
-    const rotation = new THREE.Euler(Math.PI / 2, 0, 0);
-    const roof = createPlane(WIDTH, LENGTH, floorRoofMaterial, position, rotation);
-    scene.add(roof);
-}
+// function generateRoof() {
+//     const WIDTH = 80;
+//     const LENGTH = 80;
+//     const position = new THREE.Vector3(0, 2.5, 0);
+//     const rotation = new THREE.Euler(Math.PI / 2, 0, 0);
+//     const roof = createPlane(WIDTH, LENGTH, floorRoofMaterial, position, rotation);
+//     scene.add(roof);
+// }
 
 function light() {
     scene.add(new THREE.AmbientLight(0xffffff, 0.2));
@@ -225,79 +382,4 @@ function light3() {
 }
 light3();
 
-function loadModel() {
-    const loader = new GLTFLoader();
-    const spinner = document.getElementById('spinner');
-    const blocker = document.getElementById('blocker');
-
-    loader.load(
-        '/models/FINALKRWWWW.gltf',
-        (gltf) => {
-            const model = gltf.scene;
-            const animations = gltf.animations;
-            const mixer = new THREE.AnimationMixer(model);
-
-            // Play first animation if available
-            if (animations.length > 0) {
-                const action = mixer.clipAction(animations[0]);
-                action.play();
-            }
-
-            model.traverse((object) => {
-                if (object instanceof THREE.Mesh) {
-                    object.castShadow = true;
-                    object.receiveShadow = true;
-                    object.frustumCulled = false;
-                }
-            });
-
-            model.position.set(0, 0, 0); // Adjust position as needed
-            model.scale.set(1, 1, 1);
-            scene.add(model);
-
-            // Animation update in the animation loop
-            const clock = new THREE.Clock();
-            function animateModel() {
-                const delta = clock.getDelta();
-                mixer.update(delta); // Update animations
-                requestAnimationFrame(animateModel);
-            }
-            animateModel();
-
-            // Hide blocker when the model is loaded
-            if (blocker) {
-                blocker.style.display = 'none';
-            }
-            if (spinner) {
-                spinner.style.display = 'none';
-            }
-
-        },
-        // Progress callback
-        undefined,
-        // Error callback
-        (error) => {
-            console.error('Error loading the model:', error);
-        }
-    );
-}
-
-loadModel();
-const audio = new Audio('/audio/sound.mp3');
-
-const loadingText = document.getElementById('loading-text');
-
-let dotCount = 0;
-const maxDots = 3;
-const intervalTime = 500; // milliseconds
-
-// Function to update the loading text
-function updateLoadingText() {
-    dotCount = (dotCount + 1) % (maxDots + 1); // Cycle dotCount from 0 to maxDots
-    if (loadingText) {
-        loadingText.textContent = 'Loading' + '.'.repeat(dotCount);
-    }
-}
-
-// Start the interval to update the text
-const loadingInterval = setInterval(updateLoadingText, intervalTime);
+// i have this code i need you to fix few issues make blocker disappear only when everything is loaded provide full code fix dont delete commented code
