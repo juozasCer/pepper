@@ -1,4 +1,3 @@
-
 import * as THREE from 'three'
 import { CameraHelper } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -12,13 +11,14 @@ scene.background = new THREE.Color(0x000000);
 
 // CAMERA
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 1.3,1 ); // First-person camera at height 1.6
-camera.lookAt(0,1.3,-1)
+camera.position.set(0, 1.3, 1); // First-person camera at height 1.6
+camera.lookAt(0, 1.3, -1);
+
 // RENDERER
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.shadowMap.enabled = true
+renderer.shadowMap.enabled = true;
 
 // CSS2DRenderer for HTML overlays
 const labelRenderer = new CSS2DRenderer();
@@ -29,10 +29,7 @@ labelRenderer.domElement.style.pointerEvents = 'none'; // Allow pointer events t
 document.body.appendChild(labelRenderer.domElement);
 
 // LIGHTS
-light()
-
-// FLOOR
-generateFloor()
+light();
 
 // CONTROLS
 const controls = new PointerLockControls(camera, renderer.domElement);
@@ -79,36 +76,69 @@ const label = new CSS2DObject(div);
 label.position.set(0, 1, 0); // Position at (0, 1, 0)
 scene.add(label);
 
+// Load textures once
+const textureLoader = new THREE.TextureLoader();
+// const placeholder = textureLoader.load("./textures/placeholder/placeholder.png");
+const textures = {
+    sandBaseColor: textureLoader.load("./textures/tile/T_uegoehgfw_4K_B.png"),
+    sandNormalMap: textureLoader.load("./textures/tile/T_uegoehgfw_4K_N.png"),
+    sandHeightMap: textureLoader.load("./textures/tile/T_uegoehgfw_4K_H.png"),
+    sandAmbientOcclusion: textureLoader.load("./textures/tile/T_uegoehgfw_4K_ORM.png")
+};
+
+// Optimize textures
+const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+Object.values(textures).forEach(texture => {
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(25, 25);
+    texture.anisotropy = maxAnisotropy;
+    texture.encoding = THREE.sRGBEncoding; // Optional: if your textures are in sRGB
+    texture.minFilter = THREE.LinearMipMapLinearFilter;
+});
+
+// Create a shared material for floor and roof
+const floorRoofMaterial = new THREE.MeshStandardMaterial({
+    map: textures.sandBaseColor,
+    normalMap: textures.sandNormalMap,
+    displacementMap: textures.sandHeightMap,
+    displacementScale: 0,
+    aoMap: textures.sandAmbientOcclusion
+});
+
+// Generate floor and roof
+generateFloor();
+generateRoof();
+
 const clock = new THREE.Clock();
 // ANIMATE
 function animate() {
     requestAnimationFrame(animate);
 
     // stats.begin(); // Start measuring FPS
-  
+
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
-  
+
     if (controls.isLocked) {
-      // Update movement
-      velocity.x -= velocity.x * 10.0 * delta;
-      velocity.z -= velocity.z * 10.0 * delta;
-  
-      direction.z = Number(moveForward) - Number(moveBackward);
-      direction.x = Number(moveRight) - Number(moveLeft);
-      direction.normalize();
-  
-      const speed = 50; // Movement speed
-      if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
-      if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
-  
-      controls.moveRight(-velocity.x * delta);
-      controls.moveForward(-velocity.z * delta);
-  
-      // Constrain camera position
-      const position = controls.getObject().position;
-      position.x = THREE.MathUtils.clamp(position.x, -0.5, 0.45); // Limit x to ±3
-      position.z = THREE.MathUtils.clamp(position.z, 0.2, 1.5); // Limit z to -23 to +5
+        // Update movement
+        velocity.x -= velocity.x * 10.0 * delta;
+        velocity.z -= velocity.z * 10.0 * delta;
+
+        direction.z = Number(moveForward) - Number(moveBackward);
+        direction.x = Number(moveRight) - Number(moveLeft);
+        direction.normalize();
+
+        const speed = 50; // Movement speed
+        if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+        if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+
+        controls.moveRight(-velocity.x * delta);
+        controls.moveForward(-velocity.z * delta);
+
+        // Constrain camera position
+        const position = controls.getObject().position;
+        position.x = THREE.MathUtils.clamp(position.x, -0.5, 0.45); // Limit x to ±3
+        position.z = THREE.MathUtils.clamp(position.z, 0.2, 1.5); // Limit z to -23 to +5
     }
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
@@ -125,53 +155,44 @@ function onWindowResize() {
 }
 window.addEventListener('resize', onWindowResize);
 
-function generateFloor() {
-    // TEXTURES
-    const textureLoader = new THREE.TextureLoader();
-    // const placeholder = textureLoader.load("./textures/placeholder/placeholder.png");
-    const sandBaseColor = textureLoader.load("./textures/tile/T_uegoehgfw_4K_B.png");
-    const sandNormalMap = textureLoader.load("./textures/tile/T_uegoehgfw_4K_N.png");
-    const sandHeightMap = textureLoader.load("./textures/tile/T_uegoehgfw_4K_H.png");
-    const sandAmbientOcclusion = textureLoader.load("./textures/tile/T_uegoehgfw_4K_ORM.png");
-
-    const WIDTH = 80
-    const LENGTH = 80
-
-    const geometry = new THREE.PlaneGeometry(WIDTH, LENGTH, 512, 512);
-    const material = new THREE.MeshStandardMaterial(
-        {
-            map: sandBaseColor, normalMap: sandNormalMap,
-            displacementMap: sandHeightMap, displacementScale: 0,
-            aoMap: sandAmbientOcclusion
-        })
-    wrapAndRepeatTexture(material.map!)
-    wrapAndRepeatTexture(material.normalMap!)
-    wrapAndRepeatTexture(material.displacementMap!)
-    wrapAndRepeatTexture(material.aoMap!)
-    // const material = new THREE.MeshPhongMaterial({ map: placeholder})
-
-    const floor = new THREE.Mesh(geometry, material)
-    floor.receiveShadow = true
-    floor.rotation.x = - Math.PI / 2
-    scene.add(floor)
+function createPlane(width: number, length: number, material: THREE.Material, position: THREE.Vector3, rotation: THREE.Euler): THREE.Mesh {
+    const geometry = new THREE.PlaneGeometry(width, length, 512, 512);
+    const plane = new THREE.Mesh(geometry, material);
+    plane.position.copy(position);
+    plane.rotation.copy(rotation);
+    plane.receiveShadow = true;
+    return plane;
 }
 
-function wrapAndRepeatTexture (map: THREE.Texture) {
-    map.wrapS = map.wrapT = THREE.RepeatWrapping
-    map.repeat.x = map.repeat.y = 25
+function generateFloor() {
+    const WIDTH = 80;
+    const LENGTH = 80;
+    const position = new THREE.Vector3(0, 0, 0);
+    const rotation = new THREE.Euler(-Math.PI / 2, 0, 0);
+    const floor = createPlane(WIDTH, LENGTH, floorRoofMaterial, position, rotation);
+    scene.add(floor);
+}
+
+function generateRoof() {
+    const WIDTH = 80;
+    const LENGTH = 80;
+    const position = new THREE.Vector3(0, 2.5, 0);
+    const rotation = new THREE.Euler(Math.PI / 2, 0, 0);
+    const roof = createPlane(WIDTH, LENGTH, floorRoofMaterial, position, rotation);
+    scene.add(roof);
 }
 
 function light() {
-    scene.add(new THREE.AmbientLight(0xffffff, 0.2))
+    scene.add(new THREE.AmbientLight(0xffffff, 0.2));
 
-    const dirLight = new THREE.DirectionalLight(0xffffff,0.5)
-    dirLight.position.set(1,5, 0);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirLight.position.set(1, 5, 0);
     dirLight.target.position.set(0, 0, 0);
     dirLight.castShadow = true;
-    dirLight.shadow.camera.top =0.78;
-    dirLight.shadow.camera.bottom = - 0.7;
-    dirLight.shadow.camera.left = - 1.8;
-    dirLight.shadow.camera.right =1;
+    dirLight.shadow.camera.top = 0.78;
+    dirLight.shadow.camera.bottom = -0.7;
+    dirLight.shadow.camera.left = -1.8;
+    dirLight.shadow.camera.right = 1;
     dirLight.shadow.camera.near = 0.1;
     dirLight.shadow.camera.far = 6;
     dirLight.shadow.mapSize.width = 4096;
@@ -186,9 +207,9 @@ function light() {
 function light3() {
     // scene.add(new THREE.AmbientLight(0xFFFFff, 0.1));
     const pointLight1 = new THREE.PointLight(0xffffff, 0.7, 2); // Color, intensity, distance
-    pointLight1.position.set(0,1,1);
+    pointLight1.position.set(0, 1, 1);
     // pointLight1.castShadow = true;
-  
+
     // Shadow Settings
     pointLight1.shadow.mapSize.width = 1024; // Shadow resolution
     pointLight1.shadow.mapSize.height = 1024;
@@ -197,15 +218,14 @@ function light3() {
     pointLight1.shadow.bias = -0.005; // Far plane
     pointLight1.shadow.normalBias = 0.05;
     scene.add(pointLight1);
-  
+
     // Helper to visualize shadow camera
     const pointLightHelper = new THREE.PointLightHelper(pointLight1, 1); // 1 is the helper size
     // scene.add(pointLightHelper);
-  }
-  light3();
+}
+light3();
 
-
-  function loadModel() {
+function loadModel() {
     const loader = new GLTFLoader();
     const spinner = document.getElementById('spinner');
     const blocker = document.getElementById('blocker');
@@ -251,11 +271,11 @@ function light3() {
             if (spinner) {
                 spinner.style.display = 'none';
             }
-            
+
         },
         // Progress callback
         undefined,
-          // Error callback
+        // Error callback
         (error) => {
             console.error('Error loading the model:', error);
         }
@@ -265,52 +285,19 @@ function light3() {
 loadModel();
 const audio = new Audio('/audio/sound.mp3');
 
-function generateRoof() {
-    // TEXTURES
-    const textureLoader = new THREE.TextureLoader();
-    // const placeholder = textureLoader.load("./textures/placeholder/placeholder.png");
-    const sandBaseColor = textureLoader.load("./textures/tile/T_uegoehgfw_4K_B.png");
-    const sandNormalMap = textureLoader.load("./textures/tile/T_uegoehgfw_4K_N.png");
-    const sandHeightMap = textureLoader.load("./textures/tile/T_uegoehgfw_4K_H.png");
-    const sandAmbientOcclusion = textureLoader.load("./textures/tile/T_uegoehgfw_4K_ORM.png");
-
-    const WIDTH = 80
-    const LENGTH = 80
-
-    const geometry = new THREE.PlaneGeometry(WIDTH, LENGTH, 512, 512);
-    const material = new THREE.MeshStandardMaterial(
-        {
-            map: sandBaseColor, normalMap: sandNormalMap,
-            displacementMap: sandHeightMap, displacementScale: 0,
-            aoMap: sandAmbientOcclusion,
-        })
-    wrapAndRepeatTexture(material.map!)
-    wrapAndRepeatTexture(material.normalMap!)
-    wrapAndRepeatTexture(material.displacementMap!)
-    wrapAndRepeatTexture(material.aoMap!)
-    // const material = new THREE.MeshPhongMaterial({ map: placeholder})
-
-    const roof = new THREE.Mesh(geometry, material)
-    roof.receiveShadow = true
-    roof.rotation.x = Math.PI / 2
-    roof.position.set(0,2.5,0)
-    scene.add(roof)
-}
-generateRoof();
-
 const loadingText = document.getElementById('loading-text');
-      
-      let dotCount = 0;
-      const maxDots = 3;
-      const intervalTime = 500; // milliseconds
-      
-      // Function to update the loading text
-      function updateLoadingText() {
-        dotCount = (dotCount + 1) % (maxDots + 1); // Cycle dotCount from 0 to maxDots
-        if(loadingText){
-              loadingText.textContent = 'Loading' + '.'.repeat(dotCount);
-        }
-      }
-      
-      // Start the interval to update the text
-      const loadingInterval = setInterval(updateLoadingText, intervalTime);
+
+let dotCount = 0;
+const maxDots = 3;
+const intervalTime = 500; // milliseconds
+
+// Function to update the loading text
+function updateLoadingText() {
+    dotCount = (dotCount + 1) % (maxDots + 1); // Cycle dotCount from 0 to maxDots
+    if (loadingText) {
+        loadingText.textContent = 'Loading' + '.'.repeat(dotCount);
+    }
+}
+
+// Start the interval to update the text
+const loadingInterval = setInterval(updateLoadingText, intervalTime);

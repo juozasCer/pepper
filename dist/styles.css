@@ -4,6 +4,7 @@ body {
   display: flex; /* Flexbox for centering */
   justify-content: center; /* Center horizontally */
   align-items: center; /* Center vertically */
+  overflow: hidden;
 }
 #loading-text{
   position: absolute;
