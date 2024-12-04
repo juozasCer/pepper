@@ -169,7 +169,7 @@ controls.addEventListener('unlock', () => {
 // Create and add the div as a CSS2DObject
 const div = document.createElement('div');
 div.style.color = 'white'; // Optional: style the text
-div.textContent = '$SHITsim';
+div.textContent = 'FejPqdCsA1G6Q6EEqcLnonZbJvraR4J7xUDdSVuepump';
 const label = new CSS2DObject(div);
 label.position.set(0, 1, 0); // Position at (0, 1, 0)
 scene.add(label);
