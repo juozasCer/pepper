@@ -68,13 +68,83 @@ clickToPlayOverlay.style.width = '100%';
 clickToPlayOverlay.style.height = '100%';
 clickToPlayOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
 clickToPlayOverlay.style.color = 'white';
-clickToPlayOverlay.style.display = 'flex';
+clickToPlayOverlay.style.display = 'none'; // Initially hidden
+clickToPlayOverlay.style.flexDirection = 'column'; // Arrange elements vertically
 clickToPlayOverlay.style.justifyContent = 'center';
 clickToPlayOverlay.style.alignItems = 'center';
 clickToPlayOverlay.style.zIndex = '0';
 clickToPlayOverlay.style.fontSize = '24px';
 clickToPlayOverlay.style.cursor = 'pointer';
-clickToPlayOverlay.textContent = 'Click to Play';
+
+// Create a container for the content
+const overlayContent = document.createElement('div');
+overlayContent.style.display = 'flex';
+overlayContent.style.flexDirection = 'column';
+overlayContent.style.alignItems = 'center';
+
+// Create a 'p' element for the 'Click to Play' text
+const clickToPlayText = document.createElement('p');
+clickToPlayText.textContent = 'Click to Play';
+clickToPlayText.style.margin = '0'; // Remove default margins
+clickToPlayText.style.padding = '0';
+clickToPlayText.style.color = 'white';
+
+// Append the text to the content container
+overlayContent.appendChild(clickToPlayText);
+
+// Create a container for the SVG links
+const svgContainer = document.createElement('div');
+svgContainer.style.display = 'flex';
+svgContainer.style.flexDirection = 'row';
+svgContainer.style.marginTop = '10px'; // Add some space above the SVGs
+
+// Create the first SVG link
+const svgLink1 = document.createElement('a');
+svgLink1.href = 'https://x.com/ShitSimulator'; // Replace with actual URL
+svgLink1.target = '_blank'; // Open in new tab
+svgLink1.style.marginRight = '10px'; // Space between SVGs
+svgLink1.addEventListener('click', (event) => {
+    event.stopPropagation(); // Prevent click event from reaching the overlay
+});
+
+// Create the img element for the SVG
+const img1 = document.createElement('img');
+img1.src = '/textures/x.svg'; // Set the path to the SVG file
+img1.width = 50;
+img1.height = 50;
+img1.alt = 'SVG 1';
+
+// Append the img to the link
+svgLink1.appendChild(img1);
+
+// Create the second SVG link
+const svgLink2 = document.createElement('a');
+svgLink2.href = 'https://dexscreener.com/'; // Replace with actual URL
+svgLink2.target = '_blank'; // Open in new tab
+svgLink2.addEventListener('click', (event) => {
+    event.stopPropagation(); // Prevent click event from reaching the overlay
+});
+
+// Create the img element for the SVG
+const img2 = document.createElement('img');
+img2.src = '/textures/dex.svg'; // Set the path to the SVG file
+img2.width = 50;
+img2.height = 50;
+img2.alt = 'SVG 2';
+
+// Append the img to the link
+svgLink2.appendChild(img2);
+
+// Append SVG links to the container
+svgContainer.appendChild(svgLink1);
+svgContainer.appendChild(svgLink2);
+
+// Append the SVG container to the content container
+overlayContent.appendChild(svgContainer);
+
+// Append the content container to the overlay
+clickToPlayOverlay.appendChild(overlayContent);
+
 document.body.appendChild(clickToPlayOverlay);
 
 // Variables to store loaded resources
@@ -241,6 +311,9 @@ Promise.all([
         spinner.style.display = 'none';
     }
 
+    // Display the 'clickToPlayOverlay' when everything is loaded
+    clickToPlayOverlay.style.display = 'flex';
+
     // Clear the loading interval
     clearInterval(loadingInterval);
 }).catch((error) => {
@@ -381,5 +454,3 @@ function light3() {
     // scene.add(pointLightHelper);
 }
 light3();
-
-// i have this code i need you to fix few issues make blocker disappear only when everything is loaded provide full code fix dont delete commented code
