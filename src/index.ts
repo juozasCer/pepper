@@ -74,7 +74,7 @@ clickToPlayOverlay.style.justifyContent = 'center';
 clickToPlayOverlay.style.alignItems = 'center';
 clickToPlayOverlay.style.zIndex = '0';
 clickToPlayOverlay.style.fontSize = '24px';
-clickToPlayOverlay.style.cursor = 'pointer';
+// clickToPlayOverlay.style.cursor = 'pointer';
 
 // Create a container for the content
 const overlayContent = document.createElement('div');
